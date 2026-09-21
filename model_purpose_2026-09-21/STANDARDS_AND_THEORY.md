@@ -1,6 +1,6 @@
 # What the representation is for: theory, standards and tests for PCA and six autoencoder designs
 
-Skylar Tian · generated from result files by `lfp_autoencoder_prototype/write_standards.py` · Alon's 50 selected insertions (26 sessions, 9 labs), 48 numbers per 40 ms unless stated.
+Skylar Tian · generated from result files by `lfp_autoencoder_prototype/write_standards.py` · Using 50 selected insertions (26 sessions, 9 labs), 48 numbers per 40 ms unless stated.
 
 > **Status.** All 10 columns of the results matrix are complete. A and B come from the 50-epoch retrain when `ae_results/probes` holds it (epoch cap in the files read here: 50). Results are **completed** measurements on held-out sessions unless a section says *preliminary* or *proposed*. Nothing here was used to tune the models.
 
