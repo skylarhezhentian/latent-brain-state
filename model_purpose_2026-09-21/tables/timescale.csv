@@ -1,0 +1,16 @@
+method,acf_1e_s
+ae_anatomy_48,0.08
+ae_depth_48,0.08
+ae_filterbank_48,0.12
+ae_global_48,0.28
+ae_masked_48,0.08
+ae_waveamp_48,0.08
+bank_456,0.36
+group_pca_2x24,0.44
+group_pca_pooled_48,0.44
+group_pca_weighted_48,0.2
+group_wave+amp1,0.22
+group_wave+amp1_pooled,0.2
+spatial_avg_24,0.08
+waveform_pca_48,0.12
+waveform_pca_pooled_48,0.08
