@@ -1,0 +1,80 @@
+name: Track A overnight pilot
+
+on:
+  push:
+    branches: [track-a-rate-distortion]
+    paths:
+      - 'track_a_rate_distortion/**'
+      - '.github/workflows/track_a_overnight.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  rate-distortion-pilot:
+    runs-on: ubuntu-latest
+    timeout-minutes: 330
+    env:
+      MPLBACKEND: Agg
+      OMP_NUM_THREADS: '1'
+      MKL_NUM_THREADS: '1'
+      OPENBLAS_NUM_THREADS: '1'
+      NUMEXPR_NUM_THREADS: '1'
+      PYTHONUNBUFFERED: '1'
+    steps:
+      - name: Check out analysis branch
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: pip
+
+      - name: Install scientific and IBL dependencies
+        run: |
+          python -m pip install --upgrade pip wheel setuptools
+          python -m pip install \
+            'numpy<2' \
+            scipy \
+            pandas \
+            scikit-learn \
+            matplotlib \
+            python-pptx \
+            ONE-api \
+            ibllib \
+            ibl-neuropixel \
+            iblatlas
+
+      - name: Verify imports
+        run: |
+          python - <<'PY'
+          import numpy, pandas, scipy, sklearn, matplotlib
+          import pptx
+          from one.api import ONE
+          from brainbox.io.one import SessionLoader, SpikeSortingLoader
+          from ibldsp.voltage import destripe_lfp
+          print('imports OK')
+          PY
+
+      - name: Execute Track A pilot
+        run: |
+          python track_a_rate_distortion/run_track_a.py 2>&1 | tee track_a_run.log
+
+      - name: Save environment and output inventory
+        if: always()
+        run: |
+          mkdir -p track_a_outputs
+          python -m pip freeze > track_a_outputs/pip_freeze.txt
+          cp track_a_run.log track_a_outputs/track_a_run.log 2>/dev/null || true
+          find track_a_outputs -maxdepth 3 -type f -printf '%p\t%k KB\n' | sort > track_a_outputs/output_inventory.txt
+
+      - name: Upload mentor-ready artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: track-a-overnight-pilot
+          path: track_a_outputs/
+          if-no-files-found: error
+          retention-days: 14
