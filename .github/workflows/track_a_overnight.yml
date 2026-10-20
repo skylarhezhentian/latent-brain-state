@@ -61,7 +61,8 @@ jobs:
 
       - name: Execute Track A pilot
         run: |
-          python track_a_rate_distortion/run_track_a.py 2>&1 | tee track_a_run.log
+          set -o pipefail
+          python -m track_a_rate_distortion.run_public 2>&1 | tee track_a_run.log
 
       - name: Save environment and output inventory
         if: always()
