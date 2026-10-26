@@ -1,0 +1,60 @@
+name: Stages 2 and 4 validation
+
+on:
+  push:
+    branches: [stages-1-to-4]
+    paths:
+      - 'stages_1_to_4/**'
+      - '.github/workflows/stages_2_4.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  analyze:
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [0, 1]
+    runs-on: ubuntu-latest
+    timeout-minutes: 330
+    env:
+      MPLBACKEND: Agg
+      OMP_NUM_THREADS: '1'
+      MKL_NUM_THREADS: '1'
+      OPENBLAS_NUM_THREADS: '1'
+      NUMEXPR_NUM_THREADS: '1'
+      PYTHONUNBUFFERED: '1'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip wheel setuptools
+          python -m pip install 'numpy==1.26.4' 'pyarrow<20' scipy pandas scikit-learn matplotlib python-pptx torch ONE-api ibllib ibl-neuropixel iblatlas
+      - name: Verify code
+        run: |
+          python -m py_compile stages_1_to_4/stage2_cnn.py stages_1_to_4/stage4_helpers.py stages_1_to_4/stage4_decomposition.py
+      - name: Execute Stage 2
+        run: |
+          python -m stages_1_to_4.stage2_cnn --shard ${{ matrix.shard }} --n-shards 2 --limit 4 2>&1 | tee stage2.log
+      - name: Execute Stage 4
+        run: |
+          python -m stages_1_to_4.stage4_decomposition --shard ${{ matrix.shard }} --n-shards 2 --limit 4 2>&1 | tee stage4.log
+      - name: Save logs and environment
+        if: always()
+        run: |
+          mkdir -p stage24_outputs/shard_${{ matrix.shard }}
+          cp stage2.log stage24_outputs/shard_${{ matrix.shard }}/stage2.log 2>/dev/null || true
+          cp stage4.log stage24_outputs/shard_${{ matrix.shard }}/stage4.log 2>/dev/null || true
+          python -m pip freeze > stage24_outputs/shard_${{ matrix.shard }}/pip_freeze.txt
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: stage24-shard-${{ matrix.shard }}
+          path: stage24_outputs/
+          if-no-files-found: error
+          retention-days: 14
