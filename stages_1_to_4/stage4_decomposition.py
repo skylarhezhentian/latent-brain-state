@@ -1,7 +1,7 @@
 """Stage 4 runner: PCA components by spectrum, anatomy, behavior, and trials."""
 from __future__ import annotations
 import argparse, json, traceback
-from pathlib import import Path
+from pathlib import Path
 import numpy as np, pandas as pd, scipy.ndimage, scipy.stats
 from sklearn.decomposition import PCA
 from brainbox.io.one import SpikeSortingLoader
