@@ -11,6 +11,7 @@ from torch import nn
 from torch.utils.data import DataLoader, TensorDataset
 from sklearn.decomposition import PCA
 from track_a_rate_distortion import run_track_a as base
+from stages_1_to_4.behavior_loader import load_behavior
 
 DURATION=100.0; FS=500.0; KS=(8,16,32)
 
@@ -77,7 +78,7 @@ def main():
     for _,r in df.iterrows():
         pid=str(r.pid); t0=float(r.start_s); start=time.time(); details=one.get_details(str(r.eid)); subject=str(details.get('subject','unknown'))
         try:
-            x,fs=base.load_destriped_250(one,pid,t0,DURATION); beh=base.load_behavior_series(one,str(r.eid)); ndev=int(.8*x.shape[1]); p=PCA(n_components=max(KS),svd_solver='randomized',random_state=0).fit(x[:,:ndev].T); sc=p.transform(x.T)
+            x,fs=base.load_destriped_250(one,pid,t0,DURATION); beh=load_behavior(one,str(r.eid)); rawbeh=decode(x,fs,beh,t0); rows.append({"pid":pid,"eid":str(r.eid),"subject":subject,"lab":str(r.get('lab','')),"k":384,"method":"raw","fs":fs,"values_per_second":384*fs,"reconstruction_r2":1.0,"rmse_uv":0.0,"behavior_json":json.dumps(rawbeh),"meta_json":"{}","runtime_s":time.time()-start,**{f'behavior_r2_{q}':v for q,v in rawbeh.items()}}); ndev=int(.8*x.shape[1]); p=PCA(n_components=max(KS),svd_solver='randomized',random_state=0).fit(x[:,:ndev].T); sc=p.transform(x.T)
             for k in KS:
                 prec=(sc[:,:k]@p.components_[:k]+p.mean_).T.astype('float32'); pr2,prm=metrics(x,prec); pbeh=decode(prec,fs,beh,t0)
                 seed=int(hashlib.sha256(f'{pid}-{k}'.encode()).hexdigest()[:8],16); crec,meta=train_codec(x,k,seed); cr2,crm=metrics(x,crec); cbeh=decode(crec,fs,beh,t0)
