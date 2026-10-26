@@ -1,4 +1,4 @@
-name: Stages 2 and 4 validation
+name: Stages 2 and 4 full cohort
 
 on:
   push:
@@ -16,7 +16,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        shard: [0, 1]
+        shard: [0, 1, 2, 3, 4]
     runs-on: ubuntu-latest
     timeout-minutes: 330
     env:
@@ -35,15 +35,15 @@ jobs:
         run: |
           python -m pip install --upgrade pip wheel setuptools
           python -m pip install 'numpy==1.26.4' 'pyarrow<20' scipy pandas scikit-learn matplotlib python-pptx torch ONE-api ibllib ibl-neuropixel iblatlas
-      - name: Verify code
+      - name: Verify frozen analysis code
         run: |
-          python -m py_compile stages_1_to_4/stage2_cnn.py stages_1_to_4/stage4_helpers.py stages_1_to_4/stage4_decomposition.py
-      - name: Execute Stage 2
+          python -m py_compile stages_1_to_4/behavior_loader.py stages_1_to_4/lfp_loader.py stages_1_to_4/stage2_cnn.py stages_1_to_4/stage4_helpers.py stages_1_to_4/stage4_decomposition.py
+      - name: Execute Stage 2 matched PCA versus CNN compression
         run: |
-          python -m stages_1_to_4.stage2_cnn --shard ${{ matrix.shard }} --n-shards 2 --limit 4 2>&1 | tee stage2.log
-      - name: Execute Stage 4
+          python -m stages_1_to_4.stage2_cnn --shard ${{ matrix.shard }} --n-shards 5 2>&1 | tee stage2.log
+      - name: Execute Stage 4 component decomposition
         run: |
-          python -m stages_1_to_4.stage4_decomposition --shard ${{ matrix.shard }} --n-shards 2 --limit 4 2>&1 | tee stage4.log
+          python -m stages_1_to_4.stage4_decomposition --shard ${{ matrix.shard }} --n-shards 5 2>&1 | tee stage4.log
       - name: Save logs and environment
         if: always()
         run: |
@@ -54,7 +54,7 @@ jobs:
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: stage24-shard-${{ matrix.shard }}
+          name: stage24-full-shard-${{ matrix.shard }}
           path: stage24_outputs/
           if-no-files-found: error
           retention-days: 14
