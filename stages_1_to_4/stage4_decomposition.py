@@ -7,6 +7,7 @@ from sklearn.decomposition import PCA
 from brainbox.io.one import SpikeSortingLoader
 from track_a_rate_distortion import run_track_a as base
 from stages_1_to_4.behavior_loader import load_behavior
+from stages_1_to_4.lfp_loader import load_lfp
 from stages_1_to_4.stage4_helpers import pearson,bh,regions,spectral,trial_col,rmswin,spatial_metrics
 DURATION=100.; FS=500.; NPC=32; STEP=.04
 
@@ -18,7 +19,7 @@ def main():
     for _,r in df.iterrows():
         pid=str(r.pid); t0=float(r.start_s); subject=str(one.get_details(str(r.eid)).get('subject','unknown'))
         try:
-            x,fs=base.load_destriped_250(one,pid,t0,DURATION); ndev=int(.8*x.shape[1]); pca=PCA(n_components=NPC,svd_solver='randomized',random_state=0).fit(x[:,:ndev].T); scores=pca.transform(x.T); reg=regions(SpikeSortingLoader(pid=pid,one=one).load_channels()); beh=load_behavior(one,str(r.eid)); times=np.arange(.5,DURATION-.5+1e-9,STEP); Y,names=base.behavior_at_times(beh,t0+times); idx=np.clip(np.round(times*fs).astype(int),0,len(scores)-1); test=times>=80.5
+            x,fs=load_lfp(one,pid,t0,DURATION,FS); ndev=int(.8*x.shape[1]); pca=PCA(n_components=NPC,svd_solver='randomized',random_state=0).fit(x[:,:ndev].T); scores=pca.transform(x.T); reg=regions(SpikeSortingLoader(pid=pid,one=one).load_channels()); beh=load_behavior(one,str(r.eid)); times=np.arange(.5,DURATION-.5+1e-9,STEP); Y,names=base.behavior_at_times(beh,t0+times); idx=np.clip(np.round(times*fs).astype(int),0,len(scores)-1); test=times>=80.5
             try:trials=pd.DataFrame(one.load_object(str(r.eid),'trials',collection='alf'))
             except:trials=pd.DataFrame()
             stim=trial_col(trials,('stimOn_times','stimOn')); move=trial_col(trials,('firstMovement_times','firstMovement')); feedback=trial_col(trials,('feedback_times','feedbackTime')); choice=trial_col(trials,('choice',)); ftype=trial_col(trials,('feedbackType','feedback_type')); rt=move-stim if move is not None and stim is not None else None
